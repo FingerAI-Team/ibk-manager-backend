@@ -1,0 +1,21 @@
+services:
+  ibk-manager-backend:
+    container_name: ibk-manager-backend
+    image: ibk-manager-backend:v1  # 직접 빌드한 이미지 사용
+    ports:
+      - "3001:3001"
+    networks:
+      - ibk-network
+    environment:
+      - PORT=3001
+      - DB_HOST=postgres_postgresql-master_1
+      - DB_NAME=ibk_db
+      - DB_USER=ibk-manager
+      - DB_PASSWORD=fingerai2024!
+      - DB_PORT=5432
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://ibk-manager:fingerai2024!@postgres_postgresql-master_1/ibk_db
+
+networks:
+  ibk-network:
+    external: true
