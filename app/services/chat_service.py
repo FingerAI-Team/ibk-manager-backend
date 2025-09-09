@@ -25,18 +25,39 @@ class ChatService:
             if end < start:
                 raise ValueError("End date must be greater than or equal to start date")
 
-            # 기본 쿼리 구성
+            # 답변을 조회하는 서브쿼리 (각 질문에 대해 가장 가까운 답변)
+            answer_subquery = self.db.query(
+                ConvLog.user_id,
+                ConvLog.date,
+                ConvLog.content
+            ).filter(
+                ConvLog.qa == 'A'
+            ).subquery()
+
+            # 기본 쿼리 구성 (질문과 답변을 함께 조회)
             base_query = self.db.query(
                 ConvLog.conv_id.label('id'),
                 ConvLog.date.label('timestamp'),
                 ConvLog.user_id.label('userId'),
-                ConvLog.content.label('question')
+                ConvLog.content.label('question'),
+                func.min(answer_subquery.c.content).label('answer')
+            ).outerjoin(
+                answer_subquery, 
+                and_(
+                    ConvLog.user_id == answer_subquery.c.user_id,
+                    answer_subquery.c.date > ConvLog.date
+                )
             ).filter(
                 and_(
                     cast(ConvLog.date, Date) >= start.date(),
                     cast(ConvLog.date, Date) <= end.date(),
                     ConvLog.qa == 'Q'  # 질문만 조회
                 )
+            ).group_by(
+                ConvLog.conv_id,
+                ConvLog.date,
+                ConvLog.user_id,
+                ConvLog.content
             )
 
             # 종목 여부에 따른 쿼리 분기
@@ -58,7 +79,7 @@ class ChatService:
                         StockCls.ensemble == 'x'
                     )
                 ))
-            else:  # is_stock 파라미터가 없는 경우
+            else:  # is_stock 파라미터가 "all"인 경우
                 stock_exists = exists(
                     select(StockCls.conv_id).where(
                         and_(
@@ -100,6 +121,7 @@ class ChatService:
                         "timestamp": item.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                         "userId": item.userId,
                         "question": item.question,
+                        "answer": item.answer if item.answer else None,
                         "isStock": bool(item.isStock)
                     }
                     for item in items
