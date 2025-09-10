@@ -84,7 +84,6 @@ class ChatService:
 
             # 전체 데이터 수 조회
             total = query.count()
-
             # 페이지네이션 적용
             items = query.order_by(
                 ConvLog.date.desc()
@@ -102,7 +101,6 @@ class ChatService:
                         date_part = parts[0]
                         num_part = int(parts[1])
                         answer_conv_id = f"{date_part}_{num_part - 1:05d}"
-                        
                         answer = self.db.query(ConvLog.content).filter(
                             and_(
                                 ConvLog.conv_id == answer_conv_id,
@@ -110,7 +108,6 @@ class ChatService:
                                 ConvLog.qa == 'A'
                             )
                         ).first()
-                        
                         if answer:
                             return answer.content
                     
@@ -122,13 +119,10 @@ class ChatService:
                             ConvLog.date > question_date
                         )
                     ).order_by(ConvLog.date.asc()).first()
-                    
                     if answer:
                         return answer.content
-                        
                 except Exception as e:
                     print(f"Error finding answer for {question_conv_id}: {e}")
-                    
                 return None
 
             # 결과 포맷팅
@@ -146,9 +140,7 @@ class ChatService:
                 ],
                 "total": total
             }
-
             return result
-
         except ValueError as e:
             raise e
         except Exception as e:
