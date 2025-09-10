@@ -4,6 +4,8 @@ services:
     image: ibk-manager-backend:v1  # 직접 빌드한 이미지 사용
     ports:
       - "3001:3001"
+    volumes:
+      - ./app:/app/app  # 호스트의 ./app 디렉토리를 컨테이너의 /app/app에 마운트
     networks:
       - ibk-network
     environment:
