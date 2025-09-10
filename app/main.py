@@ -14,6 +14,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://localhost:3005",  # 프론트엔드가 3005 포트에서 실행되는 경우
         "http://ibkai.fingerservice.co.kr"
                    ],  # React 앱의 주소
     allow_credentials=True,
