@@ -46,7 +46,7 @@ class ChatService:
                 ).filter(exists().where(
                     and_(
                         StockCls.conv_id == ConvLog.conv_id,
-                        StockCls.enc_res == 'o'
+                        StockCls.ensemble == 'o'
                     )
                 ))
             elif is_stock == "non-stock":
@@ -55,7 +55,7 @@ class ChatService:
                 ).filter(exists().where(
                     and_(
                         StockCls.conv_id == ConvLog.conv_id,
-                        StockCls.enc_res == 'x'
+                        StockCls.ensemble == 'x'
                     )
                 ))
             else:  # is_stock 파라미터가 "all"인 경우
@@ -63,7 +63,7 @@ class ChatService:
                     select(StockCls.conv_id).where(
                         and_(
                             StockCls.conv_id == ConvLog.conv_id,
-                            StockCls.enc_res == 'o'
+                            StockCls.ensemble == 'o'
                         )
                     )
                 )
@@ -122,7 +122,7 @@ class ChatService:
                     if answer:
                         return answer.content
                 except Exception as e:
-                    print(f"Error finding answer for {question_conv_id}: {e}")
+                    print(f"Error finding answer for {questi구on_conv_id}: {e}")
                 return None
 
             # 결과 포맷팅
