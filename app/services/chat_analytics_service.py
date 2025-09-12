@@ -13,7 +13,6 @@ class ChatAnalyticsService:
         try:
             start = datetime.strptime(start_date, "%Y-%m-%d")
             end = datetime.strptime(end_date, "%Y-%m-%d")
-
             if end < start:
                 raise ValueError("End date must be greater than or equal to start date")
 
@@ -40,9 +39,7 @@ class ChatAnalyticsService:
                 }
                 for result in results
             ]
-
             return {"success": True, "data": {"data": data}}
-
         except Exception as e:
             return {"success": False, "error": str(e)}
 
@@ -75,7 +72,6 @@ class ChatAnalyticsService:
 
             # 0-23시까지 모든 시간대에 대한 데이터 준비
             hourly_data = {str(hour).zfill(2): 0 for hour in range(24)}
-            
             # 실제 데이터로 업데이트
             for result in results:
                 hour = str(int(result.hour)).zfill(2)  # 시간을 2자리 문자열로 변환
@@ -89,9 +85,7 @@ class ChatAnalyticsService:
                 }
                 for hour, count in hourly_data.items()
             ]
-
             return {"success": True, "data": {"data": data}}
-
         except Exception as e:
             print(f"Error in get_hourly_stats: {str(e)}")  # 디버깅용 로그
             return {"success": False, "error": str(e)}
@@ -108,7 +102,6 @@ class ChatAnalyticsService:
                     extract('month', ConvLog.date) == month
                 )
             ).order_by(ConvLog.date).limit(10)
-            
             debug_results = debug_query.all()
             print(f"=== Debug Date-Weekday Mapping for {year}-{month:02d} ===")
             for result in debug_results:
@@ -130,10 +123,8 @@ class ChatAnalyticsService:
             ).order_by(
                 extract('isodow', ConvLog.date)
             ).all()
-
             weekdays = ['월', '화', '수', '목', '금', '토', '일']
             weekday_data = {day: {'chats': 0, 'users': 0} for day in weekdays}
-            
             for result in results:
                 weekday_idx = int(result.weekday) - 1
                 weekday = weekdays[weekday_idx]
@@ -141,7 +132,6 @@ class ChatAnalyticsService:
                     'chats': result.chats,
                     'users': result.users
                 }
-
             data = [
                 {
                     "day": day,
@@ -150,9 +140,7 @@ class ChatAnalyticsService:
                 }
                 for day in weekdays
             ]
-
             return {"success": True, "data": {"data": data}}
-
         except Exception as e:
             print(f"Error in get_weekday_stats: {str(e)}")
             return {"success": False, "error": str(e)}
@@ -210,9 +198,7 @@ class ChatAnalyticsService:
                 }
                 for result in results
             ]
-
             return {"success": True, "data": {"data": data}}
-
         except Exception as e:
             print(f"Error in get_user_ranking: {str(e)}")  # 디버깅용 로그
             return {"success": False, "error": str(e)} 
