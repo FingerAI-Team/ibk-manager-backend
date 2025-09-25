@@ -108,7 +108,6 @@ class ChatService:
             else:
                 # 2025-09-17 이전 데이터: conv_id 기반 매칭
                 qa_mapping[question.id] = self._find_answer_by_conv_id(question, answers)
-        
         return qa_mapping
 
     def _find_answer_by_conv_id(self, question, answers: List) -> Optional[str]:
