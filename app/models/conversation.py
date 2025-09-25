@@ -11,6 +11,8 @@ class ConvLog(Base):
     qa = Column(String(10), nullable=False)
     content = Column(Text, nullable=False)
     user_id = Column(String(1024), nullable=False)
+    hash_value = Column(String(255), nullable=True)  # Q의 hash_value
+    hash_ref = Column(String(255), nullable=True)    # A의 hash_ref (Q의 hash_value와 매칭)
     
     # Relationships
     clicked = relationship("ClickedLog", back_populates="conv", cascade="all, delete")

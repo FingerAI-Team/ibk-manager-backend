@@ -30,7 +30,8 @@ class ChatService:
                 ConvLog.conv_id.label('id'),
                 ConvLog.date.label('timestamp'),
                 ConvLog.user_id.label('userId'),
-                ConvLog.content.label('question')
+                ConvLog.content.label('question'),
+                ConvLog.hash_value.label('hashValue')
             ).filter(
                 and_(
                     cast(ConvLog.date, Date) >= start.date(),
@@ -91,10 +92,23 @@ class ChatService:
                 page * page_size
             ).limit(page_size).all()
 
-            # 답변을 Python에서 찾기 (다단계 매칭)
-            def get_answer_for_question(question_conv_id, user_id, question_date):
-                """질문에 대한 답변을 찾는 다단계 로직"""
+            # 답변을 Python에서 찾기 (새로운 hash 기반 + 기존 방식)
+            def get_answer_for_question(question_conv_id, user_id, question_date, question_hash_value):
+                """질문에 대한 답변을 찾는 로직 (hash 기반 + 기존 방식)"""
                 try:
+                    # 2025-09-17 이후 데이터: hash 기반 매칭
+                    if question_hash_value:
+                        answer = self.db.query(ConvLog.content).filter(
+                            and_(
+                                ConvLog.hash_ref == question_hash_value,
+                                ConvLog.qa == 'A',
+                                ConvLog.user_id == user_id
+                            )
+                        ).first()
+                        if answer:
+                            return answer.content
+                    
+                    # 2025-09-17 이전 데이터: 기존 방식 (conv_id 기반)
                     # 1단계: 정확한 매칭 (conv_id - 1, 같은 사용자, qa='A')
                     parts = question_conv_id.split('_')
                     if len(parts) == 2:
@@ -122,7 +136,7 @@ class ChatService:
                     if answer:
                         return answer.content
                 except Exception as e:
-                    print(f"Error finding answer for {questi구on_conv_id}: {e}")
+                    print(f"Error finding answer for {question_conv_id}: {e}")
                 return None
 
             # 결과 포맷팅
@@ -133,7 +147,7 @@ class ChatService:
                         "timestamp": item.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                         "userId": item.userId,
                         "question": item.question,
-                        "answer": get_answer_for_question(item.id, item.userId, item.timestamp),
+                        "answer": get_answer_for_question(item.id, item.userId, item.timestamp, item.hashValue),
                         "isStock": bool(item.isStock)
                     }
                     for item in items
