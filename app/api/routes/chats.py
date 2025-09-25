@@ -4,9 +4,9 @@ from typing import Optional, Literal
 from app.core.database import get_db
 from app.services.chat_service import ChatService
 
-router = APIRouter()
+router = APIRouter(prefix="/api")
 
-@router.get("/api/chats")
+@router.get("/chats")
 async def get_chats(
     startDate: str = Query(..., description="조회 시작일 (YYYY-MM-DD)"),
     endDate: str = Query(..., description="조회 종료일 (YYYY-MM-DD)"),
