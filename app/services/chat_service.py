@@ -25,8 +25,8 @@ class ChatService:
             if end < start:
                 raise ValueError("End date must be greater than or equal to start date")
 
-            # 전체 Q&A 데이터를 한 번에 조회
-            all_data = self.db.query(
+            # 질문만 먼저 조회 (페이지네이션 적용)
+            questions_query = self.db.query(
                 ConvLog.conv_id.label('id'),
                 ConvLog.date.label('timestamp'),
                 ConvLog.user_id.label('userId'),
@@ -37,14 +37,47 @@ class ChatService:
             ).filter(
                 and_(
                     cast(ConvLog.date, Date) >= start.date(),
-                    cast(ConvLog.date, Date) <= end.date()
+                    cast(ConvLog.date, Date) <= end.date(),
+                    ConvLog.qa == 'Q'
                 )
-            ).order_by(ConvLog.date.desc()).all()
-
-            # Q와 A를 분리
-            questions = [item for item in all_data if item.qa == 'Q']
-            answers = [item for item in all_data if item.qa == 'A']
+            ).order_by(ConvLog.date.desc())
             
+            # 필터링 적용
+            if user_id:
+                questions_query = questions_query.filter(ConvLog.user_id.ilike(f"%{user_id}%"))
+            if keyword:
+                questions_query = questions_query.filter(ConvLog.content.ilike(f"%{keyword}%"))
+            
+            # 전체 질문 수 조회
+            total_questions = questions_query.count()
+            
+            # 페이지네이션 적용
+            questions = questions_query.offset(page * page_size).limit(page_size).all()
+            
+            # 해당 질문들의 답변만 조회
+            question_ids = [q.id for q in questions]
+            question_hash_values = [q.hashValue for q in questions if q.hashValue]
+            
+            # 답변 조회 (hash_ref 기반)
+            answers = []
+            if question_hash_values:
+                answers = self.db.query(
+                    ConvLog.conv_id.label('id'),
+                    ConvLog.date.label('timestamp'),
+                    ConvLog.user_id.label('userId'),
+                    ConvLog.content.label('content'),
+                    ConvLog.qa.label('qa'),
+                    ConvLog.hash_value.label('hashValue'),
+                    ConvLog.hash_ref.label('hashRef')
+                ).filter(
+                    and_(
+                        cast(ConvLog.date, Date) >= start.date(),
+                        cast(ConvLog.date, Date) <= end.date(),
+                        ConvLog.qa == 'A',
+                        ConvLog.hash_ref.in_(question_hash_values)
+                    )
+                ).all()
+
             # Q&A 매핑 (메모리에서 처리)
             qa_mapping = self._create_qa_mapping(questions, answers)
             
@@ -57,16 +90,13 @@ class ChatService:
                     'answer': answer_content
                 })
 
-            # 필터링 적용
-            filtered_questions = self._apply_filters(questions_with_answers, is_stock, user_id, keyword)
+            # 종목 여부 필터링
+            if is_stock != "all":
+                questions_with_answers = [item for item in questions_with_answers 
+                                        if self._check_is_stock(item['question'].id) == (is_stock == "stock")]
             
-            # 전체 데이터 수
-            total = len(filtered_questions)
-            
-            # 페이지네이션 적용
-            start_idx = page * page_size
-            end_idx = start_idx + page_size
-            paginated_questions = filtered_questions[start_idx:end_idx]
+            # 전체 데이터 수 (필터링 후)
+            total = len(questions_with_answers)
 
             # 결과 포맷팅
             result = {
@@ -79,7 +109,7 @@ class ChatService:
                         "answer": item['answer'],
                         "isStock": self._check_is_stock(item['question'].id)
                     }
-                    for item in paginated_questions
+                    for item in questions_with_answers
                 ],
                 "total": total
             }
@@ -141,23 +171,6 @@ class ChatService:
         
         return None
 
-    def _apply_filters(self, questions_with_answers: List, is_stock: str, user_id: Optional[str], keyword: Optional[str]) -> List:
-        """필터링 적용"""
-        filtered = questions_with_answers
-        
-        # 사용자 ID 필터
-        if user_id:
-            filtered = [item for item in filtered if user_id.lower() in item['question'].userId.lower()]
-        
-        # 키워드 필터
-        if keyword:
-            filtered = [item for item in filtered if keyword.lower() in item['question'].content.lower()]
-        
-        # 종목 여부 필터
-        if is_stock != "all":
-            filtered = [item for item in filtered if self._check_is_stock(item['question'].id) == (is_stock == "stock")]
-        
-        return filtered
 
     def _check_is_stock(self, conv_id: str) -> bool:
         """종목 관련 여부 확인"""
