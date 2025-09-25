@@ -144,28 +144,25 @@ class ChatService:
             has_next = page < total_pages - 1
             has_prev = page > 0
             
-            # 결과 포맷팅
+            # 결과 포맷팅 (이전 백엔드 형태로 맞춤)
             result = {
-                "items": [
-                    {
-                        "id": item.id,
-                        "timestamp": item.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
-                        "userId": item.userId,
-                        "question": item.question,
-                        "answer": get_answer_for_question(item.id, item.userId, item.timestamp, item.hashValue),
-                        "isStock": bool(item.isStock)
-                    }
-                    for item in items
-                ],
-                "pagination": {
+                "success": True,
+                "data": {
+                    "items": [
+                        {
+                            "id": item.id,
+                            "timestamp": item.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                            "userId": item.userId,
+                            "question": item.question,
+                            "answer": get_answer_for_question(item.id, item.userId, item.timestamp, item.hashValue),
+                            "isStock": bool(item.isStock)
+                        }
+                        for item in items
+                    ],
                     "total": total,
                     "page": page,
                     "pageSize": page_size,
-                    "totalPages": total_pages,
-                    "hasNext": has_next,
-                    "hasPrev": has_prev,
-                    "nextPage": page + 1 if has_next else None,
-                    "prevPage": page - 1 if has_prev else None
+                    "totalPages": total_pages
                 }
             }
             return result
