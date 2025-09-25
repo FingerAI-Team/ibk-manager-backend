@@ -139,6 +139,11 @@ class ChatService:
                     print(f"Error finding answer for {question_conv_id}: {e}")
                 return None
 
+            # 페이지네이션 정보 계산
+            total_pages = (total + page_size - 1) // page_size  # 올림 계산
+            has_next = page < total_pages - 1
+            has_prev = page > 0
+            
             # 결과 포맷팅
             result = {
                 "items": [
@@ -152,7 +157,16 @@ class ChatService:
                     }
                     for item in items
                 ],
-                "total": total
+                "pagination": {
+                    "total": total,
+                    "page": page,
+                    "pageSize": page_size,
+                    "totalPages": total_pages,
+                    "hasNext": has_next,
+                    "hasPrev": has_prev,
+                    "nextPage": page + 1 if has_next else None,
+                    "prevPage": page - 1 if has_prev else None
+                }
             }
             return result
         except ValueError as e:
